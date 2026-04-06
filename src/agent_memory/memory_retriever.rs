@@ -30,7 +30,8 @@ impl MemoryRetriever {
 
         match query.intent {
             QueryIntent::CurrentFact => {
-                if let (Some(entity), Some(slot)) = (query.entity.as_deref(), query.slot.as_deref()) {
+                if let (Some(entity), Some(slot)) = (query.entity.as_deref(), query.slot.as_deref())
+                {
                     if let Some(belief) = store.get_active_belief(entity, slot)? {
                         hits.push(RetrievalHit {
                             memory_id: belief.supporting_memory_ids.last().cloned(),
@@ -53,11 +54,9 @@ impl MemoryRetriever {
                 hits.extend(store.search(query)?);
             }
             QueryIntent::HistoricalFact => {
-                if let (Some(entity), Some(slot), Some(as_of)) = (
-                    query.entity.as_deref(),
-                    query.slot.as_deref(),
-                    query.as_of,
-                ) {
+                if let (Some(entity), Some(slot), Some(as_of)) =
+                    (query.entity.as_deref(), query.slot.as_deref(), query.as_of)
+                {
                     let memories = store.list_memories_for_belief(entity, slot)?;
                     let mut historical: Vec<_> = memories
                         .into_iter()
@@ -87,7 +86,10 @@ impl MemoryRetriever {
                             text: memory.raw_text.clone(),
                             memory_type: Some(memory.memory_type),
                             score: memory.confidence + 0.8,
-                            timestamp: memory.event_at.or(memory.valid_from).unwrap_or(memory.stored_at),
+                            timestamp: memory
+                                .event_at
+                                .or(memory.valid_from)
+                                .unwrap_or(memory.stored_at),
                             scope: Some(memory.scope),
                             source: Some(memory.source.source_type),
                             from_belief: false,
@@ -98,7 +100,10 @@ impl MemoryRetriever {
                 }
                 hits.extend(store.search(query)?);
             }
-            QueryIntent::PreferenceLookup | QueryIntent::TaskState | QueryIntent::EpisodicRecall | QueryIntent::SemanticBackground => {
+            QueryIntent::PreferenceLookup
+            | QueryIntent::TaskState
+            | QueryIntent::EpisodicRecall
+            | QueryIntent::SemanticBackground => {
                 hits.extend(store.search(query)?);
             }
         }

@@ -57,7 +57,10 @@ impl<S: MemoryStore> MemoryController<S> {
             belief_id: None,
             query_text: None,
             details: BTreeMap::from([
-                ("memory_type".to_string(), format!("{:?}", classified.memory_type).to_lowercase()),
+                (
+                    "memory_type".to_string(),
+                    format!("{:?}", classified.memory_type).to_lowercase(),
+                ),
                 ("entity".to_string(), classified.entity.clone()),
                 ("slot".to_string(), classified.slot.clone()),
             ]),
@@ -69,11 +72,17 @@ impl<S: MemoryStore> MemoryController<S> {
             occurred_at: self.clock.now(),
             action: "promotion".to_string(),
             candidate_id: Some(classified.candidate_id.clone()),
-            memory_id: promotion.durable_memory.as_ref().map(|memory| memory.memory_id.clone()),
+            memory_id: promotion
+                .durable_memory
+                .as_ref()
+                .map(|memory| memory.memory_id.clone()),
             belief_id: None,
             query_text: None,
             details: BTreeMap::from([
-                ("decision".to_string(), format!("{:?}", promotion.decision).to_lowercase()),
+                (
+                    "decision".to_string(),
+                    format!("{:?}", promotion.decision).to_lowercase(),
+                ),
                 ("reason".to_string(), promotion.reason.clone()),
                 ("score".to_string(), promotion.score.to_string()),
             ]),
@@ -106,7 +115,9 @@ impl<S: MemoryStore> MemoryController<S> {
                 Ok(Some(trace_id))
             }
             PromotionDecision::Promote => {
-                let memory = promotion.durable_memory.expect("promoted memory must exist");
+                let Some(memory) = promotion.durable_memory else {
+                    return Ok(None);
+                };
                 let memory_id = self.store.put_memory(&memory)?;
                 self.audit.emit(AuditEvent {
                     event_id: String::new(),
@@ -122,10 +133,14 @@ impl<S: MemoryStore> MemoryController<S> {
                     ]),
                 });
 
-                if memory.memory_type != MemoryType::Episode && memory.memory_type != MemoryType::Trace {
+                if memory.memory_type != MemoryType::Episode
+                    && memory.memory_type != MemoryType::Trace
+                {
                     let mut belief_store = BeliefStore::new(&mut self.store);
                     let existing = belief_store.get(&memory.entity, &memory.slot)?;
-                    let outcome = self.belief_updater.apply(existing, &memory, self.clock.as_ref());
+                    let outcome = self
+                        .belief_updater
+                        .apply(existing, &memory, self.clock.as_ref());
                     if let Some(prior) = outcome.prior_belief.as_ref() {
                         belief_store.save(prior)?;
                     }
@@ -144,7 +159,10 @@ impl<S: MemoryStore> MemoryController<S> {
                                     "action".to_string(),
                                     format!("{:?}", outcome.action).to_lowercase(),
                                 ),
-                                ("status".to_string(), format!("{:?}", current.status).to_lowercase()),
+                                (
+                                    "status".to_string(),
+                                    format!("{:?}", current.status).to_lowercase(),
+                                ),
                             ]),
                         });
                     }
@@ -156,7 +174,9 @@ impl<S: MemoryStore> MemoryController<S> {
     }
 
     pub fn retrieve(&mut self, query: RetrievalQuery) -> Result<Vec<RetrievalHit>> {
-        let hits = self.retriever.retrieve(&mut self.store, &query, self.clock.as_ref())?;
+        let hits = self
+            .retriever
+            .retrieve(&mut self.store, &query, self.clock.as_ref())?;
         self.audit.emit(AuditEvent {
             event_id: String::new(),
             occurred_at: self.clock.now(),
@@ -166,7 +186,10 @@ impl<S: MemoryStore> MemoryController<S> {
             belief_id: None,
             query_text: Some(query.query_text.clone()),
             details: BTreeMap::from([
-                ("intent".to_string(), format!("{:?}", query.intent).to_lowercase()),
+                (
+                    "intent".to_string(),
+                    format!("{:?}", query.intent).to_lowercase(),
+                ),
                 ("hits".to_string(), hits.len().to_string()),
             ]),
         });

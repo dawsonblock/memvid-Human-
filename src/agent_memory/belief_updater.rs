@@ -50,7 +50,11 @@ impl BeliefUpdater {
                         },
                         confidence: memory.confidence,
                         valid_from: memory.valid_from.unwrap_or(memory.stored_at),
-                        valid_to: if memory.is_retraction { Some(now) } else { None },
+                        valid_to: if memory.is_retraction {
+                            Some(now)
+                        } else {
+                            None
+                        },
                         last_reviewed_at: now,
                         supporting_memory_ids: if memory.is_retraction {
                             Vec::new()

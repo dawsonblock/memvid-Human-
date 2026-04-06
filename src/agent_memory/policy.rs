@@ -6,17 +6,17 @@ const DAY_SECONDS: i64 = 86_400;
 /// Deterministic default policy values for governed memory.
 #[derive(Debug, Clone)]
 pub struct PolicySet {
-    promotion_threshold_trace_reject: f32,
-    promotion_threshold_store_trace: f32,
-    promotion_threshold_promote: f32,
+    reject: f32,
+    trace_only: f32,
+    promote: f32,
 }
 
 impl Default for PolicySet {
     fn default() -> Self {
         Self {
-            promotion_threshold_trace_reject: 0.25,
-            promotion_threshold_store_trace: 0.35,
-            promotion_threshold_promote: 0.65,
+            reject: 0.25,
+            trace_only: 0.35,
+            promote: 0.65,
         }
     }
 }
@@ -29,12 +29,12 @@ impl PolicySet {
 
     #[must_use]
     pub fn reject_threshold(&self) -> f32 {
-        self.promotion_threshold_trace_reject
+        self.reject
     }
 
     #[must_use]
     pub fn store_trace_threshold(&self) -> f32 {
-        self.promotion_threshold_store_trace
+        self.trace_only
     }
 
     #[must_use]
@@ -43,7 +43,7 @@ impl PolicySet {
             MemoryType::Fact => 0.75,
             MemoryType::Preference => 0.70,
             MemoryType::GoalState => 0.65,
-            MemoryType::Episode => self.promotion_threshold_promote,
+            MemoryType::Episode => self.promote,
             MemoryType::Trace => 1.1,
         }
     }

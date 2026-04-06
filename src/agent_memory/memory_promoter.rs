@@ -30,7 +30,8 @@ impl MemoryPromoter {
             };
         }
 
-        if candidate.memory_type == MemoryType::Trace || score < self.policy.store_trace_threshold() {
+        if candidate.memory_type == MemoryType::Trace || score < self.policy.store_trace_threshold()
+        {
             return PromotionResult {
                 decision: PromotionDecision::StoreTrace,
                 score,
@@ -64,7 +65,10 @@ impl MemoryPromoter {
                 confidence: candidate.confidence,
                 salience: candidate.salience,
                 scope: candidate.scope,
-                ttl: candidate.ttl.or(self.policy.retention_rule(candidate.memory_type).default_ttl),
+                ttl: candidate.ttl.or(self
+                    .policy
+                    .retention_rule(candidate.memory_type)
+                    .default_ttl),
                 source: candidate.source.clone(),
                 event_at: candidate.event_at,
                 valid_from: candidate.valid_from,

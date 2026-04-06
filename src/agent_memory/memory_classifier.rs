@@ -1,9 +1,33 @@
 use super::enums::MemoryType;
 use super::schemas::CandidateMemory;
 
-const PREFERENCE_HINTS: &[&str] = &["prefer", "preference", "favorite", "likes", "dislikes", "theme"];
-const GOAL_HINTS: &[&str] = &["goal", "task", "status", "todo", "next_step", "milestone", "blocked"];
-const EVENT_HINTS: &[&str] = &["met", "went", "moved", "happened", "yesterday", "today", "last", "completed"];
+const PREFERENCE_HINTS: &[&str] = &[
+    "prefer",
+    "preference",
+    "favorite",
+    "likes",
+    "dislikes",
+    "theme",
+];
+const GOAL_HINTS: &[&str] = &[
+    "goal",
+    "task",
+    "status",
+    "todo",
+    "next_step",
+    "milestone",
+    "blocked",
+];
+const EVENT_HINTS: &[&str] = &[
+    "met",
+    "went",
+    "moved",
+    "happened",
+    "yesterday",
+    "today",
+    "last",
+    "completed",
+];
 
 /// Deterministic rule-based classifier.
 #[derive(Debug, Default, Clone, Copy)]

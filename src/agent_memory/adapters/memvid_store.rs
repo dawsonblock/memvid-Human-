@@ -3,11 +3,11 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use crate::Memvid;
 use crate::agent_memory::enums::{BeliefStatus, MemoryType, Scope, SourceType};
 use crate::agent_memory::errors::{AgentMemoryError, Result};
 use crate::agent_memory::schemas::{BeliefRecord, DurableMemory, RetrievalHit, RetrievalQuery};
 use crate::types::{AclEnforcementMode, MemoryCardBuilder, MemoryKind, PutOptions, SearchRequest};
-use crate::Memvid;
 
 const TRACK_TRACE: &str = "agent_memory_trace";
 const TRACK_MEMORY: &str = "agent_memory_memory";
@@ -50,7 +50,7 @@ fn parse_memory_type(value: Option<&String>) -> MemoryType {
         Some("episode") => MemoryType::Episode,
         Some("fact") => MemoryType::Fact,
         Some("preference") => MemoryType::Preference,
-        Some("goalstate") | Some("goal_state") => MemoryType::GoalState,
+        Some("goalstate" | "goal_state") => MemoryType::GoalState,
         _ => MemoryType::Trace,
     }
 }
@@ -83,11 +83,13 @@ fn timestamp_to_datetime(timestamp: i64) -> Result<DateTime<Utc>> {
 
 fn parse_datetime(value: Option<&String>) -> Result<Option<DateTime<Utc>>> {
     match value {
-        Some(text) => Ok(Some(DateTime::parse_from_rfc3339(text)
-            .map_err(|err| AgentMemoryError::Store {
-                reason: format!("invalid timestamp '{text}': {err}"),
-            })?
-            .with_timezone(&Utc))),
+        Some(text) => Ok(Some(
+            DateTime::parse_from_rfc3339(text)
+                .map_err(|err| AgentMemoryError::Store {
+                    reason: format!("invalid timestamp '{text}': {err}"),
+                })?
+                .with_timezone(&Utc),
+        )),
         None => Ok(None),
     }
 }
@@ -95,7 +97,10 @@ fn parse_datetime(value: Option<&String>) -> Result<Option<DateTime<Utc>>> {
 fn memory_metadata(memory: &DurableMemory) -> BTreeMap<String, String> {
     let mut metadata = BTreeMap::from([
         ("agent_memory_id".to_string(), memory.memory_id.clone()),
-        ("agent_candidate_id".to_string(), memory.candidate_id.clone()),
+        (
+            "agent_candidate_id".to_string(),
+            memory.candidate_id.clone(),
+        ),
         ("agent_entity".to_string(), memory.entity.clone()),
         ("agent_slot".to_string(), memory.slot.clone()),
         ("agent_value".to_string(), memory.value.clone()),
@@ -103,9 +108,15 @@ fn memory_metadata(memory: &DurableMemory) -> BTreeMap<String, String> {
             "agent_memory_type".to_string(),
             format!("{:?}", memory.memory_type).to_lowercase(),
         ),
-        ("agent_confidence".to_string(), memory.confidence.to_string()),
+        (
+            "agent_confidence".to_string(),
+            memory.confidence.to_string(),
+        ),
         ("agent_salience".to_string(), memory.salience.to_string()),
-        ("agent_scope".to_string(), scope_string(memory.scope).to_string()),
+        (
+            "agent_scope".to_string(),
+            scope_string(memory.scope).to_string(),
+        ),
         (
             "agent_source_type".to_string(),
             format!("{:?}", memory.source.source_type).to_lowercase(),
@@ -114,9 +125,15 @@ fn memory_metadata(memory: &DurableMemory) -> BTreeMap<String, String> {
             "agent_source_weight".to_string(),
             memory.source.trust_weight.to_string(),
         ),
-        ("agent_observed_at".to_string(), memory.stored_at.to_rfc3339()),
+        (
+            "agent_observed_at".to_string(),
+            memory.stored_at.to_rfc3339(),
+        ),
         ("agent_stored_at".to_string(), memory.stored_at.to_rfc3339()),
-        ("agent_is_retraction".to_string(), memory.is_retraction.to_string()),
+        (
+            "agent_is_retraction".to_string(),
+            memory.is_retraction.to_string(),
+        ),
     ]);
     if let Some(ttl) = memory.ttl {
         metadata.insert("agent_ttl".to_string(), ttl.to_string());
@@ -199,10 +216,8 @@ impl MemoryStore for InMemoryMemoryStore {
     }
 
     fn update_belief(&mut self, belief: &BeliefRecord) -> Result<()> {
-        self.beliefs.insert(
-            (belief.entity.clone(), belief.slot.clone()),
-            belief.clone(),
-        );
+        self.beliefs
+            .insert((belief.entity.clone(), belief.slot.clone()), belief.clone());
         Ok(())
     }
 
@@ -230,7 +245,10 @@ impl MemoryStore for InMemoryMemoryStore {
             {
                 continue;
             }
-            let text = format!("{} {} {} {}", memory.entity, memory.slot, memory.value, memory.raw_text);
+            let text = format!(
+                "{} {} {} {}",
+                memory.entity, memory.slot, memory.value, memory.raw_text
+            );
             let score = simple_score(&text, &query.query_text);
             if score == 0.0 {
                 continue;
@@ -244,7 +262,10 @@ impl MemoryStore for InMemoryMemoryStore {
                 text: memory.raw_text.clone(),
                 memory_type: Some(memory.memory_type),
                 score,
-                timestamp: memory.event_at.or(memory.valid_from).unwrap_or(memory.stored_at),
+                timestamp: memory
+                    .event_at
+                    .or(memory.valid_from)
+                    .unwrap_or(memory.stored_at),
                 scope: Some(memory.scope),
                 source: Some(memory.source.source_type),
                 from_belief: false,
@@ -393,7 +414,10 @@ impl MemvidStore {
                 continue;
             }
             let score = simple_score(
-                &format!("{} {} {} {}", memory.entity, memory.slot, memory.value, memory.raw_text),
+                &format!(
+                    "{} {} {} {}",
+                    memory.entity, memory.slot, memory.value, memory.raw_text
+                ),
                 &query.query_text,
             );
             if score == 0.0 {
@@ -408,7 +432,10 @@ impl MemvidStore {
                 text: memory.raw_text.clone(),
                 memory_type: Some(memory.memory_type),
                 score,
-                timestamp: memory.event_at.or(memory.valid_from).unwrap_or(memory.stored_at),
+                timestamp: memory
+                    .event_at
+                    .or(memory.valid_from)
+                    .unwrap_or(memory.stored_at),
                 scope: Some(memory.scope),
                 source: Some(memory.source.source_type),
                 from_belief: false,
@@ -418,20 +445,25 @@ impl MemvidStore {
         }
         Ok(hits)
     }
+
+    fn frame_id_for_uri(&self, uri: &str) -> Result<u64> {
+        Ok(self.memvid.frame_by_uri(uri)?.id)
+    }
 }
 
 impl MemoryStore for MemvidStore {
     fn put_trace(&mut self, raw_text: &str, metadata: BTreeMap<String, String>) -> Result<String> {
         let trace_id = Uuid::new_v4().to_string();
+        let uri = format!("mv2://agent-memory/trace/{trace_id}");
         let mut extra_metadata = metadata;
         extra_metadata.insert("agent_trace_id".to_string(), trace_id.clone());
-        let frame_id = self.memvid.put_bytes_with_options(
+        self.memvid.put_bytes_with_options(
             raw_text.as_bytes(),
             PutOptions {
                 timestamp: Some(Utc::now().timestamp()),
                 track: Some(TRACK_TRACE.to_string()),
                 kind: Some("agent_memory_trace".to_string()),
-                uri: Some(format!("mv2://agent-memory/trace/{trace_id}")),
+                uri: Some(uri.clone()),
                 title: None,
                 metadata: None,
                 search_text: Some(raw_text.to_string()),
@@ -442,17 +474,19 @@ impl MemoryStore for MemvidStore {
             },
         )?;
         self.memvid.commit()?;
+        let frame_id = self.frame_id_for_uri(&uri)?;
         Ok(format!("trace:{frame_id}"))
     }
 
     fn put_memory(&mut self, memory: &DurableMemory) -> Result<String> {
-        let frame_id = self.memvid.put_bytes_with_options(
+        let uri = format!("mv2://agent-memory/memory/{}", memory.memory_id);
+        self.memvid.put_bytes_with_options(
             memory.raw_text.as_bytes(),
             PutOptions {
                 timestamp: Some(memory.stored_at.timestamp()),
                 track: Some(TRACK_MEMORY.to_string()),
                 kind: Some(format!("agent_memory_{:?}", memory.memory_type).to_lowercase()),
-                uri: Some(format!("mv2://agent-memory/memory/{}", memory.memory_id)),
+                uri: Some(uri.clone()),
                 title: Some(format!("{}:{}", memory.entity, memory.slot)),
                 metadata: None,
                 search_text: Some(memory.raw_text.clone()),
@@ -462,13 +496,15 @@ impl MemoryStore for MemvidStore {
                 ..PutOptions::default()
             },
         )?;
+        self.memvid.commit()?;
+        let frame_id = self.frame_id_for_uri(&uri)?;
 
         let mut builder = MemoryCardBuilder::new()
             .kind(type_to_memory_kind(memory.memory_type))
             .entity(memory.entity.clone())
             .slot(memory.slot.clone())
             .value(memory.value.clone())
-            .source(frame_id, Some(format!("mv2://agent-memory/memory/{}", memory.memory_id)))
+            .source(frame_id, Some(uri))
             .engine("agent_memory", "1");
         if let Some(event_at) = memory.event_at {
             builder = builder.event_date(event_at.timestamp());
@@ -481,7 +517,11 @@ impl MemoryStore for MemvidStore {
         builder = builder.confidence(memory.confidence);
         builder = if memory.is_retraction {
             builder.retracts()
-        } else if self.memvid.get_current_memory(&memory.entity, &memory.slot).is_some() {
+        } else if self
+            .memvid
+            .get_current_memory(&memory.entity, &memory.slot)
+            .is_some()
+        {
             builder.updates()
         } else {
             builder
@@ -497,34 +537,44 @@ impl MemoryStore for MemvidStore {
 
     fn update_belief(&mut self, belief: &BeliefRecord) -> Result<()> {
         let belief_json = serde_json::to_string(belief)?;
-        let frame_id = self.memvid.put_bytes_with_options(
+        let uri = format!("mv2://agent-memory/belief/{}", belief.belief_id);
+        self.memvid.put_bytes_with_options(
             belief_json.as_bytes(),
             PutOptions {
                 timestamp: Some(belief.last_reviewed_at.timestamp()),
                 track: Some(TRACK_BELIEF.to_string()),
                 kind: Some("agent_memory_belief".to_string()),
-                uri: Some(format!("mv2://agent-memory/belief/{}", belief.belief_id)),
+                uri: Some(uri.clone()),
                 title: Some(format!("belief:{}:{}", belief.entity, belief.slot)),
                 search_text: Some(belief.current_value.clone()),
                 extra_metadata: BTreeMap::from([
                     ("belief_id".to_string(), belief.belief_id.clone()),
-                    ("belief_status".to_string(), format!("{:?}", belief.status).to_lowercase()),
+                    (
+                        "belief_status".to_string(),
+                        format!("{:?}", belief.status).to_lowercase(),
+                    ),
                 ]),
                 ..PutOptions::default()
             },
         )?;
+        self.memvid.commit()?;
+        let frame_id = self.frame_id_for_uri(&uri)?;
         let builder = MemoryCardBuilder::new()
             .profile()
             .entity(belief_entity(&belief.entity))
             .slot(belief.slot.clone())
             .value(belief_json)
-            .source(frame_id, Some(format!("mv2://agent-memory/belief/{}", belief.belief_id)))
+            .source(frame_id, Some(uri))
             .engine("agent_memory", "1")
             .document_date(belief.last_reviewed_at.timestamp())
             .confidence(belief.confidence);
         let builder = if belief.status == BeliefStatus::Retracted {
             builder.retracts()
-        } else if self.memvid.get_current_memory(&belief_entity(&belief.entity), &belief.slot).is_some() {
+        } else if self
+            .memvid
+            .get_current_memory(&belief_entity(&belief.entity), &belief.slot)
+            .is_some()
+        {
             builder.updates()
         } else {
             builder
@@ -575,11 +625,15 @@ impl MemoryStore for MemvidStore {
             let Some(metadata) = hit.metadata else {
                 continue;
             };
-            if metadata.track.as_deref() != Some(TRACK_MEMORY) && metadata.track.as_deref() != Some(TRACK_TRACE) {
+            if metadata.track.as_deref() != Some(TRACK_MEMORY)
+                && metadata.track.as_deref() != Some(TRACK_TRACE)
+            {
                 continue;
             }
             let extra = metadata.extra_metadata;
-            if metadata.track.as_deref() == Some(TRACK_MEMORY) && extra.contains_key("agent_memory_id") {
+            if metadata.track.as_deref() == Some(TRACK_MEMORY)
+                && extra.contains_key("agent_memory_id")
+            {
                 let memory_id = extra.get("agent_memory_id").cloned();
                 let expired = memory_id.as_deref().is_some_and(|id| self.is_expired(id));
                 hits.push(RetrievalHit {
@@ -598,7 +652,10 @@ impl MemoryStore for MemvidStore {
                     expired,
                     metadata: extra
                         .into_iter()
-                        .filter_map(|(key, value)| key.strip_prefix("agent_meta_").map(|short| (short.to_string(), value)))
+                        .filter_map(|(key, value)| {
+                            key.strip_prefix("agent_meta_")
+                                .map(|short| (short.to_string(), value))
+                        })
                         .collect(),
                 });
             } else if metadata.track.as_deref() == Some(TRACK_TRACE) {
@@ -637,29 +694,33 @@ impl MemoryStore for MemvidStore {
             if !frame.extra_metadata.contains_key("agent_memory_id") {
                 continue;
             }
-            memories.push(self.build_durable_from_frame(card.source_frame_id, &frame.extra_metadata)?);
+            memories
+                .push(self.build_durable_from_frame(card.source_frame_id, &frame.extra_metadata)?);
         }
         Ok(memories)
     }
 
     fn expire_memory(&mut self, memory_id: &str) -> Result<()> {
-        let frame_id = self.memvid.put_bytes_with_options(
+        let uri = format!("mv2://agent-memory/expiry/{memory_id}");
+        self.memvid.put_bytes_with_options(
             format!("expired {memory_id}").as_bytes(),
             PutOptions {
                 timestamp: Some(Utc::now().timestamp()),
                 track: Some(TRACK_SYSTEM.to_string()),
                 kind: Some("agent_memory_expiry".to_string()),
-                uri: Some(format!("mv2://agent-memory/expiry/{memory_id}")),
+                uri: Some(uri.clone()),
                 search_text: Some(format!("expired {memory_id}")),
                 ..PutOptions::default()
             },
         )?;
+        self.memvid.commit()?;
+        let frame_id = self.frame_id_for_uri(&uri)?;
         let card = MemoryCardBuilder::new()
             .kind(MemoryKind::Other)
             .entity(expiry_entity())
             .slot(memory_id.to_string())
             .value("expired".to_string())
-            .source(frame_id, Some(format!("mv2://agent-memory/expiry/{memory_id}")))
+            .source(frame_id, Some(uri))
             .engine("agent_memory", "1")
             .document_date(Utc::now().timestamp())
             .build(0)
