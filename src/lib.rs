@@ -139,6 +139,8 @@ pub mod symspell_cleanup;
 #[cfg(feature = "api_embed")]
 pub mod api_embed;
 
+pub mod agent_memory;
+
 #[cfg(test)]
 mod tests_lex_flag;
 
