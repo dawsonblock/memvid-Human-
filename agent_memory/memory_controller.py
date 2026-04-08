@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 from .audit import AuditLogger
@@ -49,6 +50,7 @@ class MemoryController:
         confidence: float = 0.40,
         salience: float = 0.30,
         scope: Scope = Scope.PRIVATE,
+        ttl: timedelta | None = None,
         extra: dict[str, Any] | None = None,
     ) -> PromotionResult:
         candidate = self.intake.from_text(
@@ -61,6 +63,7 @@ class MemoryController:
             confidence=confidence,
             salience=salience,
             scope=scope,
+            ttl=ttl,
             extra=extra,
         )
         return self.ingest_candidate(candidate, actor=actor)

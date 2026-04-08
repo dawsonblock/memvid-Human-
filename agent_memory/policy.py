@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import timedelta
 
 from .enums import MemoryType
@@ -52,7 +53,11 @@ DEFAULT_RETENTION_RULES: dict[MemoryType, RetentionRule] = {
 
 class MemoryPolicy:
     def __init__(self, retention_rules: dict[MemoryType, RetentionRule] | None = None) -> None:
-        self.retention_rules = retention_rules or DEFAULT_RETENTION_RULES
+        rules = DEFAULT_RETENTION_RULES if retention_rules is None else retention_rules
+        self.retention_rules = {
+            memory_type: replace(rule)
+            for memory_type, rule in rules.items()
+        }
 
     def retention_rule_for(self, memory_type: MemoryType) -> RetentionRule:
         return self.retention_rules[memory_type]

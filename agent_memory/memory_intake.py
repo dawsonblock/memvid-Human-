@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import timedelta
 from typing import Any
 import uuid
 
@@ -25,6 +26,7 @@ class MemoryIntake:
         confidence: float = 0.40,
         salience: float = 0.30,
         scope: Scope = Scope.PRIVATE,
+        ttl: timedelta | None = None,
         extra: dict[str, Any] | None = None,
     ) -> CandidateMemory:
         return CandidateMemory(
@@ -39,7 +41,7 @@ class MemoryIntake:
             confidence=confidence,
             salience=salience,
             scope=scope,
-            ttl=None,
+            ttl=ttl,
             extra=extra or {},
         )
 
@@ -53,6 +55,7 @@ class MemoryIntake:
         memory_type: MemoryType | None = None,
         confidence: float | None = None,
         salience: float | None = None,
+        ttl: timedelta | None = None,
     ) -> CandidateMemory:
         return replace(
             candidate,
@@ -62,4 +65,5 @@ class MemoryIntake:
             memory_type=memory_type if memory_type is not None else candidate.memory_type,
             confidence=confidence if confidence is not None else candidate.confidence,
             salience=salience if salience is not None else candidate.salience,
+            ttl=ttl if ttl is not None else candidate.ttl,
         )
