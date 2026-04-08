@@ -103,7 +103,11 @@ class MemoryController:
             return result
 
         durable = result.durable_memory
-        assert durable is not None
+        if durable is None:
+            raise ValueError(
+                f'Promotion decision {result.decision.value} requires durable_memory, '
+                f'but none was provided for candidate {classified.candidate_id}'
+            )
         self.store.put_memory(durable)
 
         self.audit.log(
