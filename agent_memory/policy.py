@@ -64,5 +64,5 @@ class MemoryPolicy:
     def should_require_confirmation(self, candidate: CandidateMemory) -> bool:
         return self.retention_rule_for(candidate.memory_type).requires_confirmation
 
-    def effective_ttl(self, candidate: CandidateMemory):
+    def effective_ttl(self, candidate: CandidateMemory) -> timedelta | None:
         return candidate.ttl or self.retention_rule_for(candidate.memory_type).default_ttl
