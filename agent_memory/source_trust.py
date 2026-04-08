@@ -15,7 +15,9 @@ DEFAULT_SOURCE_WEIGHTS: dict[SourceType, float] = {
 
 class SourceTrust:
     def __init__(self, weights: dict[SourceType, float] | None = None) -> None:
-        self.weights = weights or DEFAULT_SOURCE_WEIGHTS
+        self.weights = (
+            DEFAULT_SOURCE_WEIGHTS.copy() if weights is None else weights.copy()
+        )
 
     def weight_for(self, source: Provenance) -> float:
         return self.weights.get(source.source_type, 0.50)
