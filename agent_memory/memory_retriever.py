@@ -31,7 +31,12 @@ class MemoryRetriever:
     def retrieve(self, query: RetrievalQuery) -> list[RetrievalHit]:
         hits: list[RetrievalHit] = []
 
-        if query.as_of is None and query.intent in BELIEF_MEMORY_TYPES and query.entity and query.slot:
+        if (
+            query.as_of is None
+            and query.intent in BELIEF_MEMORY_TYPES
+            and query.entity is not None
+            and query.slot is not None
+        ):
             belief = self.belief_store.get(query.entity, query.slot)
             if belief and belief.current_value is not None:
                 hits.append(self._belief_to_hit(belief, query.intent))
