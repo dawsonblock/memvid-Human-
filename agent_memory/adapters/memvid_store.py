@@ -5,8 +5,8 @@ from typing import Any, Protocol
 import re
 import uuid
 
-from ..enums import BeliefStatus, MemoryType, QueryIntent, Scope, SourceType
-from ..schemas import BeliefRecord, DurableMemory, Provenance, RetrievalHit, RetrievalQuery
+from ..enums import BeliefStatus, MemoryType, QueryIntent
+from ..schemas import BeliefRecord, DurableMemory, RetrievalHit, RetrievalQuery
 
 
 class MemoryStore(Protocol):
