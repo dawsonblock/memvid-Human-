@@ -13,7 +13,11 @@ class MemoryClassifier:
         if candidate.memory_type != MemoryType.TRACE:
             return candidate
 
-        if candidate.entity and candidate.slot and candidate.value:
+        if (
+            candidate.entity is not None
+            and candidate.slot is not None
+            and candidate.value is not None
+        ):
             if candidate.slot in {'preference', 'style', 'likes', 'dislikes'}:
                 return replace(
                     candidate,
